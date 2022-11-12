@@ -1,7 +1,11 @@
-﻿using AutoMapper;
+﻿
+using AutoMapper;
+using FilmesApi.Data;
+using FilmesApi.Services;
 using FilmesAPI.Data;
-using FilmesAPI.Data.Dto;
+using FilmesAPI.Data.Dtos;
 using FilmesAPI.Models;
+using FluentResults;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -14,67 +18,52 @@ namespace FilmesAPI.Controllers
     [Route("[controller]")]
     public class FilmeController : ControllerBase
     {
-        private FilmeContext _context;
-        private IMapper _mapper;
+        private FilmeService _filmeService;
 
-        public FilmeController(FilmeContext context, IMapper mapper)
+        public FilmeController(FilmeService filmeService)
         {
-            _context = context;
-            _mapper = mapper;
-        }   
+            _filmeService = filmeService;
+        }
 
         [HttpPost]
-        public IActionResult AdicionaFilme([FromBody] CreateFilmeDto filmedto)
+        public IActionResult AdicionaFilme([FromBody] CreateFilmeDto filmeDto)
         {
-            Filme filme = _mapper.Map<Filme>(filmedto);
-
-            _context.Filmes.Add(filme);
-            _context.SaveChanges();
-            return CreatedAtAction(nameof(RecuperaFilmePorId), new { Id = filme.Id }, filme);
+            ReadFilmeDto readDto = _filmeService.AdicionaFilme(filmeDto);
+            return CreatedAtAction(nameof(RecuperaFilmesPorId), new { Id = readDto.Id }, readDto);
         }
 
         [HttpGet]
-        public IEnumerable<Filme> RecuperaFilmes()
+        public IActionResult RecuperaFilmes([FromQuery] int? classificacaoEtaria = null)
         {
-            return _context.Filmes;
+            List<ReadFilmeDto> readDto = _filmeService.RecuperaFilmes(classificacaoEtaria);
+            if (readDto == null) return NotFound();
+            return Ok(readDto);
         }
 
         [HttpGet("{id}")]
-        public IActionResult RecuperaFilmePorId(int id)
+        public IActionResult RecuperaFilmesPorId(int id)
         {
-            Filme filme = _context.Filmes.FirstOrDefault(filme => filme.Id == id);
-            if (filme != null)
-            {
-                ReadFilmeDto filmeDto = _mapper.Map<ReadFilmeDto>(filme);
-                return Ok(filmeDto);
-            }
-            return NotFound();
+            ReadFilmeDto readDto = _filmeService.RecuperaFilmesPorId(id);
+            if (readDto == null) return NotFound();
+            return Ok(readDto);
+            
         }
 
         [HttpPut("{id}")]
         public IActionResult AtualizaFilme(int id, [FromBody] UpdateFilmeDto filmeDto)
         {
-            Filme filme = _context.Filmes.FirstOrDefault(filme => filme.Id == id);
-            if (filme == null)
-            {
-                return NotFound();
-            }
-            _mapper.Map(filmeDto, filme);
-            _context.SaveChanges();
+            Result resultado = _filmeService.AtualizaFilme(id, filmeDto);
+            if (resultado.IsFailed) return NotFound();
             return NoContent();
         }
 
         [HttpDelete("{id}")]
         public IActionResult DeletaFilme(int id)
         {
-            Filme filme = _context.Filmes.FirstOrDefault(filme => filme.Id == id);
-            if (filme == null)
-            {
-                return NotFound();
-            }
-            _context.Remove(filme);
-            _context.SaveChanges();
+            Result resultado = _filmeService.DeletaFilme(id);
+            if (resultado.IsFailed) return NotFound();
             return NoContent();
         }
+
     }
 }

@@ -39,6 +39,9 @@ namespace UsuariosApi
             services.AddIdentity<IdentityUser<int>, IdentityRole<int>>()
                 .AddEntityFrameworkStores<UserDbContext>();
             services.AddScoped<CadastroService, CadastroService>();
+            services.AddScoped<LoginService, LoginService>();
+            services.AddScoped<TokenService, TokenService>();
+            services.AddScoped<LogoutService, LogoutService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
